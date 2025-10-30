@@ -1,34 +1,28 @@
-// Import classes for global exposure
-import { CipherPaySDK } from './core/CipherPaySDK';
-import { ChainType } from './core/WalletProvider';
+// src/index.ts
+export * as Types from "./types/core";
+export * as Keys from "./types/keys";
+export * as Tokens from "./types/tokens";
+export * as Proofs from "./types/proofs";
 
-// Browser-compatible exports
-export { CipherPaySDK } from './core/CipherPaySDK';
-export { ChainType } from './core/WalletProvider';
+export {
+  createIdentity,
+  deriveRecipientCipherPayPubKey,
+} from "./keys/identity";
+export { buildNote } from "./notes/note";
+export { commitmentOf } from "./notes/commitment";
+export { encryptNote, decrypt_note } from "./notes/view";
 
-// Default export
-export { CipherPaySDK as default } from './core/CipherPaySDK';
+export { RelayerClient } from "./relayer/client";
 
-// Type exports
-export * from './types/Note';
-export * from './types/ZKProof';
-export * from './types/CipherTx';
+export { ensureUserAta, wrapSol } from "./chains/solana/token";
+export { deposit } from "./flows/deposit";
+//export { transfer } from "./flows/transfer";
+//export { withdraw } from "./flows/withdraw";
 
-// Utility exports
-export * from './utils/encryption';
-export * from './utils/hash';
-
-// Error exports
-export { ErrorHandler, ErrorType, ErrorContext } from './errors/ErrorHandler';
-
-// Create ChainType value for global exposure
-const ChainTypeValue = {
-    ethereum: 'ethereum' as ChainType,
-    solana: 'solana' as ChainType
-};
-
-// Global exposure for browser
-if (typeof window !== 'undefined') {
-    (window as any).CipherPaySDK = CipherPaySDK;
-    (window as any).ChainType = ChainTypeValue;
-}
+export { Networks } from "./config/networks";
+export { TOKENS } from "./config/assets";
+export { tokenIdOf } from "./registry/tokenId.js";
+export { InMemoryRelayer } from "./relayer/mock.js";
+export { bigintifySignals } from "./utils/zk.js";
+export { createWalletSend, createKeypairSend, type SendTx } from "./chains/solana/tx.js";
+export { wrapWSOLIfNeeded } from "./chains/solana/token.js";
