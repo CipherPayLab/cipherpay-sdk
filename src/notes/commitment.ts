@@ -1,14 +1,19 @@
-import { Note, Commitment } from "../types/core.js";
-import { poseidonN } from "../utils/crypto.js";
+import { poseidonHash } from "../crypto/poseidon";
 
-export async function commitmentOf(note: Note): Promise<Commitment> {
-  // Canonical order; tokenId is already a field hash in v3 design
-  const fields: bigint[] = [
-    note.amount,
-    note.tokenId,
-    note.ownerCipherPayPubKey,
-    note.randomness.r,
-    note.randomness.s ?? 0n
+export async function commitmentOf(
+  input:
+    | Array<bigint | number | string>
+    | { amount: bigint | number | string; tokenId: bigint | number | string; ownerCipherPayPubKey: bigint | number | string; randomness: { r: bigint | number | string; s?: bigint | number | string } }
+): Promise<bigint> {
+  if (Array.isArray(input)) {
+    return await poseidonHash(input);
+  }
+  const fields = [
+    input.amount,
+    input.tokenId,
+    input.ownerCipherPayPubKey,
+    input.randomness?.r,
+    input.randomness?.s ?? 0
   ];
-  return await poseidonN(fields);
+  return await poseidonHash(fields);
 }

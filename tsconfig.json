@@ -11,5 +11,13 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["src", "examples", "test"]
+  "files": [
+    "src/index.ts",
+    "src/config/assets.ts",
+    "src/types/tokens.ts",
+    "src/utils/zk.ts",
+    "src/crypto/poseidon.ts",
+    "src/notes/commitment.ts",
+    "src/types/circomlibjs.d.ts"
+  ]
 }

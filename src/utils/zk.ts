@@ -1,5 +1,14 @@
 import { z } from "zod";
-import { toBigInt } from "./big.js";
+function toBigInt(v: unknown): bigint {
+  if (typeof v === "bigint") return v;
+  if (typeof v === "number") return BigInt(v);
+  if (typeof v === "string") {
+    const s = v.trim();
+    return BigInt(s.startsWith("0x") ? s : BigInt(s));
+  }
+  if (v && typeof (v as any).toString === "function") return BigInt((v as any).toString());
+  throw new TypeError(`toBigInt: unsupported ${typeof v}`);
+}
 
 export const DepositSignalsZ = z.object({
   amount: z.union([z.string(), z.number(), z.bigint()]),
