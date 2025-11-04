@@ -1,7 +1,7 @@
 import { ProveResult } from "../common/types.js";
 import { loadArtifacts, loadJSON } from "../common/io.js";
 import { prove, verify as verifyGroth16 } from "../common/groth16.js";
-import artifacts from "./artifacts.json" assert { type: "json" };
+import artifacts from "./artifacts.json.js" assert { type: "json" };
 
 // Shape TBD — placeholder for now
 export interface TransferPublicSignals {

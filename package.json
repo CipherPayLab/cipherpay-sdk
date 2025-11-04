@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "build:browser": "tsup src/index.ts --format iife --global-name CipherPaySDK --out-dir dist/browser --minify && cp dist/browser/index.global.js dist/browser/cipherpay-sdk.browser.js",
+    "build:browser": "tsup && cp dist/browser/index.global.js dist/browser/cipherpay-sdk.browser.js",
     "clean": "rm -rf dist"
   },
   "exports": {
@@ -17,11 +17,15 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "zod": "^3.23.8",
-    "circomlibjs": "^0.1.7"
+    "circomlibjs": "^0.1.7",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "typescript": "^5.6.3",
-    "tsup": "^8.1.0"
+    "assert": "^2.1.0",
+    "buffer": "^6.0.3",
+    "events": "^3.3.0",
+    "readable-stream": "^4.7.0",
+    "tsup": "^8.1.0",
+    "typescript": "^5.6.3"
   }
 }

@@ -1,4 +1,4 @@
-import { poseidonHash } from "../crypto/poseidon";
+import { poseidonHash } from "../crypto/poseidon.js";
 
 export async function commitmentOf(
   input:

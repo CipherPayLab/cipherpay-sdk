@@ -1,5 +1,5 @@
 // Minimal public surface for server usage
-export { TOKENS } from "./config/assets";
-export { bigintifySignals } from "./utils/zk";
-export { poseidonHash } from "./crypto/poseidon";
-export { commitmentOf } from "./notes/commitment";
+export { TOKENS } from "./config/assets.js";
+export { bigintifySignals } from "./utils/zk.js";
+export { poseidonHash } from "./crypto/poseidon.js";
+export { commitmentOf } from "./notes/commitment.js";

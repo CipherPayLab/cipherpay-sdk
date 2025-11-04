@@ -5,10 +5,24 @@ import { serialize, Schema } from "borsh";
 /** Anchor discriminator = first 8 bytes of sha256("global:<methodName>") */
 export function methodDiscriminator(name: string): Uint8Array {
   const data = new TextEncoder().encode(`global:${name}`);
-  // node crypto
-  const { createHash } = require("node:crypto") as typeof import("node:crypto");
-  const sha = createHash("sha256").update(data).digest();
-  return sha.subarray(0, 8);
+  
+  // Use Web Crypto API in browser, Node.js crypto in Node
+  if (typeof globalThis !== 'undefined' && globalThis.crypto && globalThis.crypto.subtle) {
+    // Browser: use Web Crypto API (async)
+    // For sync version, we'll use a polyfill or fallback
+    throw new Error('methodDiscriminator requires async crypto in browser. Use async version instead.');
+  }
+  
+  // Node.js: use crypto module
+  try {
+    // @ts-ignore
+    const { createHash } = require("node:crypto") as typeof import("node:crypto");
+    const sha = createHash("sha256").update(data).digest();
+    return sha.subarray(0, 8);
+  } catch (e) {
+    // Fallback: use Web Crypto API (if available, but it's async)
+    throw new Error('methodDiscriminator requires Node.js crypto or async Web Crypto API');
+  }
 }
 
 // ---------- Encoding helpers ----------

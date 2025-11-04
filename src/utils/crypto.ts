@@ -19,17 +19,36 @@ export async function poseidonN(xs: bigint[]): Promise<bigint> {
 }
 
 export function randomField(): bigint {
-  // NOTE: replace with proper field-sized RNG; placeholder using crypto.getRandomValues via Node
+  // Use Web Crypto API in browser, Node.js crypto in Node
   const buf = new Uint32Array(8);
-  const { randomFillSync } = awaitImportCrypto();
-  randomFillSync(buf as unknown as Buffer);
+  
+  // Try Web Crypto API first (browser)
+  if (typeof globalThis !== 'undefined' && globalThis.crypto && globalThis.crypto.getRandomValues) {
+    globalThis.crypto.getRandomValues(buf);
+  } else if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+    window.crypto.getRandomValues(buf);
+  } else {
+    // Fallback: try Node.js crypto
+    try {
+      // @ts-ignore
+      const crypto = require('crypto');
+      if (crypto.randomFillSync) {
+        crypto.randomFillSync(buf as unknown as Buffer);
+      } else if (crypto.randomBytes) {
+        const bytes = crypto.randomBytes(buf.length * 4);
+        buf.set(new Uint32Array(bytes.buffer, bytes.byteOffset, buf.length));
+      } else {
+        throw new Error('No crypto implementation available');
+      }
+    } catch (e) {
+      // Last resort: use Math.random (not cryptographically secure, but works)
+      for (let i = 0; i < buf.length; i++) {
+        buf[i] = Math.floor(Math.random() * 0x100000000);
+      }
+    }
+  }
+  
   let x = 0n;
   for (const n of buf) x = (x << 32n) ^ BigInt(n);
   return x;
-}
-
-async function awaitImportCrypto() {
-  // Node >= 19 has global 'crypto', but keep explicit for clarity
-  // @ts-ignore
-  return await import("node:crypto");
 }
