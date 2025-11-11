@@ -6,12 +6,24 @@ import { Commitment } from "../types/core.js";
 export class RelayerClient implements RelayerAPI {
   constructor(private baseUrl: string, private token?: string) {}
 
+  getBaseUrl(): string { return this.baseUrl; }
+
   setAuth(token: string) { this.token = token; }
 
   private headers(): Record<string, string> {
     const h: Record<string, string> = { "content-type": "application/json" };
     if (this.token) h.authorization = `Bearer ${this.token}`;
     return h;
+  }
+
+  // Get relayer info (pubkey, etc.)
+  async getRelayerInfo(): Promise<{ relayerPubkey: string }> {
+    const r = await fetch(`${this.baseUrl}/api/v1/relayer/info`, { headers: this.headers() });
+    if (!r.ok) {
+      const txt = await r.text();
+      throw new Error(`Relayer getRelayerInfo failed: ${r.status} ${txt}`);
+    }
+    return await r.json();
   }
 
   async getRoot(): Promise<{ root: bigint; nextIndex: number }> {
@@ -65,6 +77,64 @@ export class RelayerClient implements RelayerAPI {
       }
     })().catch(() => {});
     return () => ctrl.abort();
+  }
+
+  // Prepare deposit: get merkle path for commitment
+  async prepareDeposit(commitment: string | bigint): Promise<{
+    merkleRoot: string; // BE hex(32)
+    nextLeafIndex: number;
+    inPathElements: string[]; // BE hex bottom→top
+    inPathIndices: number[]; // 0/1 bits
+  }> {
+    const r = await fetch(`${this.baseUrl}/api/v1/prepare/deposit`, {
+      method: "POST",
+      headers: this.headers(),
+      body: JSON.stringify({ commitment: commitment.toString() })
+    });
+    if (!r.ok) {
+      const txt = await r.text();
+      throw new Error(`Relayer prepareDeposit failed: ${r.status} ${txt}`);
+    }
+    return await r.json();
+  }
+
+  // Submit deposit: send proof and public signals to relayer
+  async submitDeposit(params: {
+    amount: number | bigint;
+    tokenMint: string;
+    proof: any;
+    publicSignals: string[];
+    depositHash?: string;
+    commitment?: string;
+    memo?: number | bigint;
+    sourceOwner?: string;
+    sourceTokenAccount?: string;
+    useDelegate?: boolean;
+  }): Promise<{ ok: boolean; signature?: string; txid?: string; txSig?: string }> {
+    const body: any = {
+      operation: "deposit",
+      amount: Number(params.amount),
+      tokenMint: params.tokenMint,
+      proof: params.proof,
+      publicSignals: params.publicSignals,
+    };
+    if (params.depositHash) body.depositHash = params.depositHash;
+    if (params.commitment) body.commitment = params.commitment;
+    if (params.memo !== undefined) body.memo = Number(params.memo);
+    if (params.sourceOwner) body.sourceOwner = params.sourceOwner;
+    if (params.sourceTokenAccount) body.sourceTokenAccount = params.sourceTokenAccount;
+    if (params.useDelegate !== undefined) body.useDelegate = params.useDelegate;
+
+    const r = await fetch(`${this.baseUrl}/api/v1/submit/deposit`, {
+      method: "POST",
+      headers: this.headers(),
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) {
+      const txt = await r.text();
+      throw new Error(`Relayer submitDeposit failed: ${r.status} ${txt}`);
+    }
+    return await r.json();
   }
 }
 
