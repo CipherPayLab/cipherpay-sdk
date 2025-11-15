@@ -1,10 +1,10 @@
 import { ProveResult } from "../common/types.js";
 import { loadArtifacts, loadJSON } from "../common/io.js";
 import { prove, verify as verifyGroth16 } from "../common/groth16.js";
-import artifacts from "./artifacts.json.js" assert { type: "json" };
+import artifacts from "./artifacts.json" assert { type: "json" };
 
 export interface WithdrawPublicSignals {
-  nullifier: string | bigint;
+  nullifier: string | bigint; 
   merkleRoot: string | bigint;
   amount: string | bigint;
   tokenId: string | bigint;
@@ -18,7 +18,7 @@ export interface WithdrawInput {
 
 export async function generateWithdrawProof(input: WithdrawInput): Promise<ProveResult<WithdrawPublicSignals>> {
   const art = await loadArtifacts(import.meta.url.replace(/prover\.ts$/, "artifacts.json"));
-  const out = await prove<WithdrawPublicSignals>(art.wasm, art.zkey, input);
+  const out = await prove<WithdrawPublicSignals>(art.wasm, art.zkey, input as unknown as Record<string, unknown>);
   if (art.vkey) {
     const vkey = await loadJSON(art.vkey);
     const ok = await verifyGroth16(vkey, out.publicSignals, out.proof);

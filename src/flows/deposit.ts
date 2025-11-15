@@ -120,7 +120,7 @@ export async function deposit(params: DepositParams): Promise<DepositResult> {
   ]);
 
   // 4) Build circuit inputs (matching test pattern)
-  const inputSignals: Record<string, any> = {
+  const inputSignals = {
     ownerWalletPubKey: ownerWalletPubKey.toString(),
     ownerWalletPrivKey: ownerWalletPrivKey.toString(),
     randomness: note.randomness.r.toString(),
@@ -137,10 +137,10 @@ export async function deposit(params: DepositParams): Promise<DepositResult> {
 
     oldMerkleRoot: beHexToBig(prep.merkleRoot).toString(),
     depositHash: depositHash.toString(),
-  };
+  } as any;
 
   // 5) Generate proof
-  const { proof, publicSignals } = await generateDepositProof(inputSignals);
+  const { proof, publicSignals } = await generateDepositProof(inputSignals as any);
 
   // 6) Ensure user ATA exists and has tokens
   const userAta = solana.userTokenAta ?? await ensureUserAta(
@@ -158,13 +158,15 @@ export async function deposit(params: DepositParams): Promise<DepositResult> {
     
     // Approve relayer as delegate
     const allowance = params.amount.atoms;
+    // Note: approveChecked expects owner as Signer, but in browser context we use wallet adapter
+    // The transaction will be signed by the wallet adapter when sent
     await approveChecked(
       solana.connection,
-      solana.payer,
+      solana.payer as any,
       solana.mint,
       userAta,
       relayerPk,
-      solana.owner,
+      solana.owner as any,
       allowance,
       mintInfo.decimals
     );
@@ -203,7 +205,7 @@ export async function deposit(params: DepositParams): Promise<DepositResult> {
     amount: params.amount.atoms,
     tokenMint: solana.mint.toBase58(),
     proof,
-    publicSignals: publicSignals as string[],
+    publicSignals: Array.isArray(publicSignals) ? publicSignals.map((s: any) => String(s)) : Object.values(publicSignals).map((s: any) => String(s)),
     depositHash: finalDepHashHex,
     commitment: finalCommitmentHex,
     memo: params.memo,

@@ -13,7 +13,9 @@ export async function prove<TPublicSignals = unknown>(
   input: Record<string, unknown>
 ): Promise<ProveResult<TPublicSignals>> {
   // snarkjs supports URLs for fetch in ESM as long as it's a file:// that node can read
-  const { proof, publicSignals } = await groth16.prove(fileUrlToPathOrUrl(wasmUrl), fileUrlToPathOrUrl(zkeyUrl), input);
+  const wasmPath = await fileUrlToPathOrUrl(wasmUrl);
+  const zkeyPath = await fileUrlToPathOrUrl(zkeyUrl);
+  const { proof, publicSignals } = await groth16.prove(wasmPath, zkeyPath, input);
   return { proof, publicSignals: publicSignals as TPublicSignals };
 }
 

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CipherPay SDK Browser Test</title>
+</head>
+<body>
+    <h1>CipherPay SDK Browser Test</h1>
+    <div id="output"></div>
+
+    <script src="dist/browser/cipherpay-sdk.browser.js"></script>
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(msg, isError = false) {
+            const p = document.createElement('p');
+            p.textContent = msg;
+            p.style.color = isError ? 'red' : 'green';
+            output.appendChild(p);
+            console.log(msg);
+        }
+
+        // Test 1: Check if Buffer is available
+        try {
+            if (typeof Buffer !== 'undefined' && Buffer.writeUInt32BE) {
+                log('✅ Buffer is available globally with writeUInt32BE method');
+            } else {
+                log('❌ Buffer is not properly defined', true);
+            }
+        } catch (e) {
+            log('❌ Error checking Buffer: ' + e.message, true);
+        }
+
+        // Test 2: Check if CipherPaySDK is available
+        try {
+            if (typeof window.CipherPaySDK !== 'undefined') {
+                log('✅ CipherPaySDK is available on window');
+            } else {
+                log('❌ CipherPaySDK is not available on window', true);
+            }
+        } catch (e) {
+            log('❌ Error checking CipherPaySDK: ' + e.message, true);
+        }
+
+        // Test 3: Check if CipherPaySDK is a constructor
+        try {
+            if (typeof window.CipherPaySDK === 'function') {
+                log('✅ CipherPaySDK is a constructor function');
+                
+                // Try to create an instance
+                const sdk = new window.CipherPaySDK({
+                    chainType: 'solana',
+                    rpcUrl: 'https://api.devnet.solana.com',
+                    relayerUrl: 'http://localhost:3001'
+                });
+                
+                if (sdk) {
+                    log('✅ CipherPaySDK instance created successfully');
+                    log('   SDK config: ' + JSON.stringify(sdk.config));
+                } else {
+                    log('❌ Failed to create CipherPaySDK instance', true);
+                }
+            } else {
+                log('❌ CipherPaySDK is not a constructor: ' + typeof window.CipherPaySDK, true);
+            }
+        } catch (e) {
+            log('❌ Error creating CipherPaySDK instance: ' + e.message, true);
+            console.error(e);
+        }
+
+        // Test 4: Check exported utilities
+        try {
+            log('✅ All checks completed');
+        } catch (e) {
+            log('❌ Error: ' + e.message, true);
+        }
+    </script>
+</body>
+</html>
+

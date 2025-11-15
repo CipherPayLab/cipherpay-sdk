@@ -1,4 +1,3 @@
-import "isomorphic-fetch";
 import { RelayerAPI } from "./api.js";
 import { MerklePath } from "../types/core.js";
 import { Commitment } from "../types/core.js";
