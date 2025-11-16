@@ -14,6 +14,14 @@ export { bigintifySignals } from "./utils/zk.js";
 export { poseidonHash } from "./crypto/poseidon.js";
 export { commitmentOf } from "./notes/commitment.js";
 
+// Identity exports
+export { createIdentity, deriveRecipientCipherPayPubKey } from "./keys/identity.js";
+export type { CipherPayKeypair, ViewKey, Identity } from "./types/keys.js";
+
 // Flow exports
 export { deposit } from "./flows/deposit.js";
 export type { DepositParams, DepositResult } from "./flows/deposit.js";
+
+// Solana delegate approval (one-time setup for deposits)
+export { approveRelayerDelegate, revokeRelayerDelegate } from "./chains/solana/delegate.js";
+export type { ApproveRelayerDelegateParams, ApproveRelayerDelegateResult } from "./chains/solana/delegate.js";

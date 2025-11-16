@@ -11,6 +11,8 @@
 
 import { RelayerClient } from "./relayer/client.js";
 import { deposit, DepositParams, DepositResult } from "./flows/deposit.js";
+import { createIdentity, deriveRecipientCipherPayPubKey } from "./keys/identity.js";
+import type { Identity, CipherPayKeypair } from "./types/keys.js";
 
 export interface SDKConfig {
   chainType: 'solana' | 'ethereum';
@@ -59,6 +61,15 @@ export class CipherPaySDK {
       relayerUrl: config.relayerUrl,
       programId: config.programId
     });
+  }
+
+  // Identity management
+  async createIdentity(): Promise<Identity> {
+    return createIdentity();
+  }
+
+  async deriveRecipientCipherPayPubKey(keypair: CipherPayKeypair): Promise<bigint> {
+    return deriveRecipientCipherPayPubKey(keypair);
   }
 
   // Deposit flow

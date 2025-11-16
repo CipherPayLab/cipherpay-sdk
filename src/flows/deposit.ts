@@ -1,22 +1,11 @@
 import { Identity } from "../types/keys.js";
 import { TokenDescriptor, Amount } from "../types/tokens.js";
 import { Note } from "../types/core.js";
-import { RelayerClient } from "../relayer/client.js";
 import { buildNote } from "../notes/note.js";
 import { commitmentOf } from "../notes/commitment.js";
 import { tokenIdOf } from "../registry/tokenId.js";
 import { generateDepositProof } from "../circuits/deposit/prover.js";
 import { poseidonHash } from "../crypto/poseidon.js";
-import { ensureUserAta } from "../chains/solana/token.js";
-import {
-  ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID,
-  getOrCreateAssociatedTokenAccount,
-  approveChecked,
-  getMint,
-} from "@solana/spl-token";
-import { PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
-import { wrapWSOLIfNeeded } from "../chains/solana/token.js";
-import { TOKENS } from "../config/assets.js";
 
 export interface DepositParams {
   identity: Identity;
@@ -24,28 +13,11 @@ export interface DepositParams {
   amount: Amount;
   recipient?: bigint; // defaults to identity.recipientCipherPayPubKey
   memo?: bigint;
-  chainContext: {
-    solana?: {
-      connection: any;
-      owner: PublicKey; // user wallet
-      payer: PublicKey; // usually same as owner (wallet adapters ignore)
-      mint: PublicKey;
-
-      programId: PublicKey;
-      vaultAuthorityPda: PublicKey;
-
-      // Optional overrides (ATA derivations)
-      userTokenAta?: PublicKey;
-      vaultTokenAta?: PublicKey;
-
-      send: (tx: Transaction) => Promise<string>;
-    };
-    // evm omitted here
-  };
-  relayer: RelayerClient;
   
-  // For delegate-based deposits (matching test pattern)
-  useDelegate?: boolean;
+  // Server API configuration (UI → Server → Relayer flow)
+  serverUrl: string;
+  authToken?: string;
+  
   // Solana wallet keys as bigints (for circuit inputs)
   ownerWalletPubKey?: bigint;
   ownerWalletPrivKey?: bigint;
@@ -87,34 +59,61 @@ function feFromIndex(idx: number): bigint {
 }
 
 export async function deposit(params: DepositParams): Promise<DepositResult> {
-  if (!params.chainContext.solana) throw new Error("Solana context required for SPL deposit");
-  const { solana } = params.chainContext;
-
-  // 1) Build note & commitment
-  const ownerCipher = params.recipient ?? params.identity.recipientCipherPayPubKey;
-  const tokenId = await tokenIdOf(params.token);
-  const note: Note = buildNote({
-    amount: params.amount.atoms,
-    tokenId,
-    ownerCipherPayPubKey: ownerCipher,
-    memo: params.memo,
-  });
-  
-  // Compute commitment: H(amount, ownerCipherPayPubKey, randomness, tokenId, memo)
-  const commitment = await commitmentOf(note);
-
-  // 2) Prepare deposit: get merkle path from relayer
-  const prep = await params.relayer.prepareDeposit(commitment);
-  
-  // 3) Compute depositHash and other values needed for proof
-  // If ownerWalletPubKey/PrivKey provided, use them; otherwise derive from identity
+  // 0) First, derive ownerCipherPayPubKey from wallet keys
+  // This must match what the circuit computes in NoteCommitmentFromWallet
   const ownerWalletPubKey = params.ownerWalletPubKey ?? BigInt(0);
   const ownerWalletPrivKey = params.ownerWalletPrivKey ?? BigInt(0);
   const nonce = params.nonce ?? feFromIndex(0);
   
+  const derivedOwnerCipherPayPubKey = await poseidonHash([
+    ownerWalletPubKey,
+    ownerWalletPrivKey
+  ]);
+  
+  // 1) Build note & commitment using the DERIVED ownerCipherPayPubKey
+  // This ensures the commitment matches what the circuit will compute
+  const tokenId = await tokenIdOf(params.token);
+  const note: Note = buildNote({
+    amount: params.amount.atoms,
+    tokenId,
+    ownerCipherPayPubKey: derivedOwnerCipherPayPubKey, // ← Use derived key!
+    memo: params.memo,
+  });
+  
+  // Compute commitment: H(amount, derivedOwnerCipherPayPubKey, randomness, tokenId, memo)
+  const commitment = await commitmentOf(note);
+
+  // 2) Prepare deposit: Call SERVER API to get merkle path
+  // Server will forward to relayer
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (params.authToken) {
+    headers['Authorization'] = `Bearer ${params.authToken}`;
+  }
+
+  const prepareResponse = await fetch(`${params.serverUrl}/api/v1/prepare/deposit`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ commitment: commitment.toString() }),
+  });
+
+  if (!prepareResponse.ok) {
+    const errorText = await prepareResponse.text();
+    throw new Error(`Server prepare deposit failed: ${prepareResponse.status} ${errorText}`);
+  }
+
+  const prep = await prepareResponse.json() as {
+    merkleRoot: string;
+    nextLeafIndex: number;
+    inPathElements: string[];
+    inPathIndices: number[];
+  };
+  
+  // 3) Compute depositHash using the same derived key
   // depositHash = H(ownerCipherPayPubKey, amount, nonce)
   const depositHash = await poseidonHash([
-    ownerCipher,
+    derivedOwnerCipherPayPubKey,
     params.amount.atoms,
     nonce
   ]);
@@ -138,53 +137,23 @@ export async function deposit(params: DepositParams): Promise<DepositResult> {
     oldMerkleRoot: beHexToBig(prep.merkleRoot).toString(),
     depositHash: depositHash.toString(),
   } as any;
+  
+  // DEBUG: Log all inputs
+  console.log('[SDK deposit] Circuit inputs:', {
+    derivedOwnerCipherPayPubKey: derivedOwnerCipherPayPubKey.toString(),
+    computedCommitment: commitment.toString(),
+    computedDepositHash: depositHash.toString(),
+    amount: params.amount.atoms.toString(),
+    tokenId: tokenId.toString(),
+    randomness: note.randomness.r.toString(),
+    memo: (params.memo ?? 0n).toString(),
+    nonce: nonce.toString(),
+  });
 
-  // 5) Generate proof
+  // 5) Generate proof locally in browser
   const { proof, publicSignals } = await generateDepositProof(inputSignals as any);
 
-  // 6) Ensure user ATA exists and has tokens
-  const userAta = solana.userTokenAta ?? await ensureUserAta(
-    solana.connection, solana.payer, solana.owner, solana.mint, solana.send
-  );
-
-  // 7) Handle delegate approval if needed
-  if (params.useDelegate) {
-    // Get relayer pubkey
-    const info = await params.relayer.getRelayerInfo();
-    const relayerPk = new PublicKey(info.relayerPubkey);
-
-    // Get mint decimals
-    const mintInfo = await getMint(solana.connection, solana.mint);
-    
-    // Approve relayer as delegate
-    const allowance = params.amount.atoms;
-    // Note: approveChecked expects owner as Signer, but in browser context we use wallet adapter
-    // The transaction will be signed by the wallet adapter when sent
-    await approveChecked(
-      solana.connection,
-      solana.payer as any,
-      solana.mint,
-      userAta,
-      relayerPk,
-      solana.owner as any,
-      allowance,
-      mintInfo.decimals
-    );
-  }
-
-  // 8) Wrap SOL to WSOL if needed
-  const isWSOL = solana.mint.toBase58() === TOKENS.WSOL.solana!.mint;
-  if (isWSOL) {
-    await wrapWSOLIfNeeded(
-      solana.connection,
-      solana.owner,
-      Number(params.amount.atoms),
-      solana.payer,
-      solana.send
-    );
-  }
-
-  // 9) Format hex values for submission
+  // 6) Format hex values for submission
   const commitmentHex = hex64(commitment);
   const depHashHex = hex64(depositHash);
   
@@ -200,19 +169,38 @@ export async function deposit(params: DepositParams): Promise<DepositResult> {
     }
   }
 
-  // 10) Submit deposit to relayer
-  const submitResult = await params.relayer.submitDeposit({
-    amount: params.amount.atoms,
-    tokenMint: solana.mint.toBase58(),
+  // 7) Submit deposit: Call SERVER API to submit proof
+  // Server will forward to relayer, which will execute the transaction
+  const submitBody = {
+    operation: 'deposit',
+    amount: Number(params.amount.atoms),
+    tokenMint: params.token.solana?.mint,
     proof,
-    publicSignals: Array.isArray(publicSignals) ? publicSignals.map((s: any) => String(s)) : Object.values(publicSignals).map((s: any) => String(s)),
+    publicSignals: Array.isArray(publicSignals) 
+      ? publicSignals.map((s: any) => String(s)) 
+      : Object.values(publicSignals).map((s: any) => String(s)),
     depositHash: finalDepHashHex,
     commitment: finalCommitmentHex,
-    memo: params.memo,
-    sourceOwner: params.useDelegate ? solana.owner.toBase58() : undefined,
-    sourceTokenAccount: params.useDelegate ? userAta.toBase58() : undefined,
-    useDelegate: params.useDelegate,
+    memo: params.memo ? Number(params.memo) : 0,
+  };
+
+  const submitResponse = await fetch(`${params.serverUrl}/api/v1/submit/deposit`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(submitBody),
   });
+
+  if (!submitResponse.ok) {
+    const errorText = await submitResponse.text();
+    throw new Error(`Server submit deposit failed: ${submitResponse.status} ${errorText}`);
+  }
+
+  const submitResult = await submitResponse.json() as {
+    signature?: string;
+    txid?: string;
+    txSig?: string;
+    ok?: boolean;
+  };
 
   return {
     commitment,

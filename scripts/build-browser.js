@@ -64,6 +64,10 @@ async function buildBrowser() {
     SDKClass.commitmentOf = __SDK_EXPORTS__.commitmentOf;
     SDKClass.poseidonHash = __SDK_EXPORTS__.poseidonHash;
     SDKClass.deposit = __SDK_EXPORTS__.deposit;
+    SDKClass.approveRelayerDelegate = __SDK_EXPORTS__.approveRelayerDelegate;
+    SDKClass.revokeRelayerDelegate = __SDK_EXPORTS__.revokeRelayerDelegate;
+    SDKClass.createIdentity = __SDK_EXPORTS__.createIdentity;
+    SDKClass.deriveRecipientCipherPayPubKey = __SDK_EXPORTS__.deriveRecipientCipherPayPubKey;
     
     // Export to global
     if (typeof window !== 'undefined') {
@@ -73,7 +77,7 @@ async function buildBrowser() {
       globalThis.CipherPaySDK = SDKClass;
     }
     console.log('[SDK Bundle] CipherPaySDK class exported with utilities as properties');
-    console.log('[SDK Bundle] Available: new CipherPaySDK(config), CipherPaySDK.poseidonHash(), etc.');
+    console.log('[SDK Bundle] Available: new CipherPaySDK(config), CipherPaySDK.poseidonHash(), CipherPaySDK.createIdentity(), etc.');
   } else {
     console.error('[SDK Bundle] Failed to find CipherPaySDK class in exports:', Object.keys(__SDK_EXPORTS__));
   }

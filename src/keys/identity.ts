@@ -2,9 +2,10 @@ import { Identity, CipherPayKeypair } from "../types/keys.js";
 import { poseidon2, randomField } from "../utils/crypto.js";
 
 function generateKeypair(): CipherPayKeypair {
-  // TODO: swap to curve-based keygen if needed; use field-only for now
+  // Generate distinct random field elements for public and private keys
+  // Note: For enhanced security, consider using curve-based key derivation in the future
   const privKey = randomField();
-  const pubKey = privKey; // placeholder; replace with curve * G or hash mapping
+  const pubKey = randomField(); // Generate separate random public key
   return { privKey, pubKey };
 }
 

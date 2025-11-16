@@ -303,5 +303,14 @@
       throw new Error('Dynamic require of "' + id + '" is not supported in browser bundle. Required: ' + id);
     };
   }
+  
+  // Deno stub (for snarkjs compatibility)
+  if (typeof globalObj.Deno === 'undefined') {
+    globalObj.Deno = {
+      // Minimal stub to prevent "Deno is not defined" errors in snarkjs
+      build: { os: 'browser' },
+      env: { get: function() { return undefined; } },
+    };
+  }
 })();
 
