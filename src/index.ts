@@ -11,7 +11,7 @@ export type { SDKConfig } from "./sdk.js";
 // Utility exports for server usage
 export { TOKENS } from "./config/assets.js";
 export { bigintifySignals } from "./utils/zk.js";
-export { poseidonHash } from "./crypto/poseidon.js";
+export { poseidonHash, poseidonHashForAuth } from "./crypto/poseidon.js";
 export { commitmentOf } from "./notes/commitment.js";
 
 // Identity exports
