@@ -1,8 +1,10 @@
-import { buildPoseidonOpt } from "circomlibjs"; // runtime poseidon
+import { buildPoseidonOpt } from "circomlibjs";
 let poseidonPromise: Promise<any> | null = null;
 
 export async function getPoseidon() {
-  if (!poseidonPromise) poseidonPromise = buildPoseidonOpt();
+  if (!poseidonPromise) {
+    poseidonPromise = buildPoseidonOpt();
+  }
   return poseidonPromise;
 }
 

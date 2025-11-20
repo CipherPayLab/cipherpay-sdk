@@ -12,9 +12,25 @@ export async function prove<TPublicSignals = unknown>(
   zkeyUrl: string,
   input: Record<string, unknown>
 ): Promise<ProveResult<TPublicSignals>> {
-  // snarkjs supports URLs for fetch in ESM as long as it's a file:// that node can read
-  const { proof, publicSignals } = await groth16.prove(fileUrlToPathOrUrl(wasmUrl), fileUrlToPathOrUrl(zkeyUrl), input);
-  return { proof, publicSignals: publicSignals as TPublicSignals };
+  const isBrowser = typeof window !== 'undefined' || typeof globalThis.window !== 'undefined';
+  
+  if (isBrowser) {
+    // In browser: use groth16.fullProve which handles witness generation + proving
+    // It expects the wasm URL and zkey URL directly
+    // Note: fullProve exists at runtime but may not be in type definitions
+    const { proof, publicSignals } = await (groth16 as any).fullProve(
+      input,
+      wasmUrl,
+      zkeyUrl
+    );
+    return { proof, publicSignals: publicSignals as TPublicSignals };
+  } else {
+    // In Node.js: use file paths with groth16.prove
+    const wasmPath = await fileUrlToPathOrUrl(wasmUrl);
+    const zkeyPath = await fileUrlToPathOrUrl(zkeyUrl);
+    const { proof, publicSignals } = await (groth16 as any).prove(wasmPath, zkeyPath, input);
+    return { proof, publicSignals: publicSignals as TPublicSignals };
+  }
 }
 
 /** Verify a Groth16 proof using a vkey JSON object */
@@ -27,10 +43,20 @@ export async function verify(
 }
 
 async function fileUrlToPathOrUrl(u: string): Promise<string> {
-  // snarkjs accepts both file paths and URL strings; to be safe, convert file:// → path.
+  // In browser environment, just return the URL as-is
+  if (typeof window !== 'undefined' || typeof globalThis.window !== 'undefined') {
+    return u;
+  }
+  
+  // In Node.js/Deno, convert file:// URLs to paths
   if (u.startsWith("file://")) {
-    const { fileURLToPath } = await import("node:url");
-    return fileURLToPath(u);
+    try {
+      const { fileURLToPath } = await import("node:url");
+      return fileURLToPath(u);
+    } catch (e) {
+      // Fallback: just return the URL
+      return u;
+    }
   }
   return u;
 }

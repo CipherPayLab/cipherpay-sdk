@@ -15,5 +15,5 @@ export interface Note {
   tokenId: Field;                 // field hash of token descriptor
   ownerCipherPayPubKey: Field;    // Poseidon(pubKey, privKey)
   randomness: { r: Field; s?: Field };
-  memo?: string;
+  memo?: string | bigint;
 }
