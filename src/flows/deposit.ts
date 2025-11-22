@@ -23,6 +23,11 @@ export interface DepositParams {
   ownerWalletPrivKey?: bigint;
   // Nonce for depositHash computation
   nonce?: bigint;
+  
+  // Delegate mode: source wallet and token account for transfer
+  sourceOwner?: string; // Solana wallet address (base58)
+  sourceTokenAccount?: string; // Associated token account address (base58)
+  useDelegate?: boolean; // If true, relayer will transfer from sourceTokenAccount
 }
 
 export interface DepositResult {
@@ -171,7 +176,7 @@ export async function deposit(params: DepositParams): Promise<DepositResult> {
 
   // 7) Submit deposit: Call SERVER API to submit proof
   // Server will forward to relayer, which will execute the transaction
-  const submitBody = {
+  const submitBody: any = {
     operation: 'deposit',
     amount: Number(params.amount.atoms),
     tokenMint: params.token.solana?.mint,
@@ -183,6 +188,17 @@ export async function deposit(params: DepositParams): Promise<DepositResult> {
     commitment: finalCommitmentHex,
     memo: params.memo ? Number(params.memo) : 0,
   };
+  
+  // Add delegate mode parameters if provided
+  if (params.sourceOwner) {
+    submitBody.sourceOwner = params.sourceOwner;
+  }
+  if (params.sourceTokenAccount) {
+    submitBody.sourceTokenAccount = params.sourceTokenAccount;
+  }
+  if (params.useDelegate !== undefined) {
+    submitBody.useDelegate = params.useDelegate;
+  }
 
   const submitResponse = await fetch(`${params.serverUrl}/api/v1/submit/deposit`, {
     method: 'POST',
