@@ -28,6 +28,16 @@ export interface DepositParams {
   sourceOwner?: string; // Solana wallet address (base58)
   sourceTokenAccount?: string; // Associated token account address (base58)
   useDelegate?: boolean; // If true, relayer will transfer from sourceTokenAccount
+  
+  // Callback to save note before prepare (for creating encrypted message)
+  onNoteReady?: (note: {
+    amount: bigint;
+    tokenId: bigint;
+    ownerCipherPayPubKey: bigint;
+    randomness: { r: bigint; s?: bigint };
+    memo?: bigint;
+    commitment: bigint;
+  }) => Promise<void>;
 }
 
 export interface DepositResult {
@@ -87,6 +97,18 @@ export async function deposit(params: DepositParams): Promise<DepositResult> {
   
   // Compute commitment: H(amount, derivedOwnerCipherPayPubKey, randomness, tokenId, memo)
   const commitment = await commitmentOf(note);
+
+  // 1.5) If callback provided, save note before prepare
+  if (params.onNoteReady) {
+    await params.onNoteReady({
+      amount: note.amount,
+      tokenId,
+      ownerCipherPayPubKey: derivedOwnerCipherPayPubKey,
+      randomness: note.randomness,
+      memo: params.memo,
+      commitment,
+    });
+  }
 
   // 2) Prepare deposit: Call SERVER API to get merkle path
   // Server will forward to relayer
