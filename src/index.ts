@@ -21,6 +21,8 @@ export type { CipherPayKeypair, ViewKey, Identity } from "./types/keys.js";
 // Flow exports
 export { deposit } from "./flows/deposit.js";
 export type { DepositParams, DepositResult } from "./flows/deposit.js";
+export { transfer } from "./flows/transfer.js";
+export type { TransferParams, TransferResult } from "./flows/transfer.js";
 
 // Solana delegate approval (one-time setup for deposits)
 export { approveRelayerDelegate, revokeRelayerDelegate } from "./chains/solana/delegate.js";
