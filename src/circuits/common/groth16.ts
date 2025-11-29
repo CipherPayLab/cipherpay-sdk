@@ -14,19 +14,6 @@ export async function prove<TPublicSignals = unknown>(
 ): Promise<ProveResult<TPublicSignals>> {
   const isBrowser = typeof window !== 'undefined' || typeof globalThis.window !== 'undefined';
   
-  // DEBUG: Log input before passing to snarkjs
-  console.log('[groth16.prove] Input object keys:', Object.keys(input));
-  console.log('[groth16.prove] inAmount value:', input.inAmount);
-  console.log('[groth16.prove] inAmount type:', typeof input.inAmount);
-  console.log('[groth16.prove] inAmount isArray:', Array.isArray(input.inAmount));
-  if (input.inAmount) {
-    console.log('[groth16.prove] inAmount toString:', String(input.inAmount));
-    console.log('[groth16.prove] inAmount JSON:', JSON.stringify(input.inAmount));
-  }
-  // Check for any keys that might conflict
-  const inAmountKeys = Object.keys(input).filter(k => k.toLowerCase().includes('inamount'));
-  console.log('[groth16.prove] Keys containing "inamount":', inAmountKeys);
-  
   if (isBrowser) {
     // In browser: use groth16.fullProve which handles witness generation + proving
     // It expects the wasm URL and zkey URL directly

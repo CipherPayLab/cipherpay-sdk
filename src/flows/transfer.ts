@@ -170,26 +170,13 @@ export async function transfer(params: TransferParams): Promise<TransferResult> 
   const out1Commitment = await commitmentOf(out1Note);
   const out2Commitment = await commitmentOf(out2Note);
   
-  // DEBUG: Log commitment computation details
-  console.log('[SDK transfer] Input commitment computation:', {
-    inCommitment: inCommitment.toString(),
-    inCommitmentHex: inCommitment.toString(16).padStart(64, '0'),
-    inputNote: {
-      amount: params.inputNote.amount.toString(),
-      tokenId: params.inputNote.tokenId.toString(),
-      ownerCipherPayPubKey: params.inputNote.ownerCipherPayPubKey.toString(),
-      randomnessR: params.inputNote.randomness.r.toString(),
-      memo: params.inputNote.memo?.toString() || '0',
-    },
-    senderCipherPayPubKey: senderCipherPayPubKey.toString(),
-    senderCipherPayPubKeyMatches: params.inputNote.ownerCipherPayPubKey === senderCipherPayPubKey,
-  });
 
-  // 3) Compute nullifier: H(senderCipherPayPubKey, inAmount, inRandomness)
+  // 3) Compute nullifier: H(senderCipherPayPubKey, inRandomness, inTokenId)
+  // This matches the NullifierFromCipherKey circuit: Poseidon(cipherPayPubKey, randomness, tokenId)
   const nullifier = await poseidonHash([
     senderCipherPayPubKey,
-    params.inputNote.amount,
-    params.inputNote.randomness.r
+    params.inputNote.randomness.r,
+    params.inputNote.tokenId
   ]);
 
   // 4) Callbacks to save encrypted notes before prepare
@@ -222,13 +209,6 @@ export async function transfer(params: TransferParams): Promise<TransferResult> 
   if (params.authToken) {
     headers['Authorization'] = `Bearer ${params.authToken}`;
   }
-
-  // DEBUG: Log commitment being sent to relayer
-  console.log('[SDK transfer] Sending commitment to prepare endpoint:', {
-    inCommitmentDecimal: inCommitment.toString(),
-    inCommitmentHex: inCommitment.toString(16).padStart(64, '0'),
-    inCommitmentHexWith0x: '0x' + inCommitment.toString(16).padStart(64, '0'),
-  });
 
   const prepareResponse = await fetch(`${params.serverUrl}/api/v1/prepare/transfer`, {
     method: 'POST',
@@ -310,48 +290,15 @@ export async function transfer(params: TransferParams): Promise<TransferResult> 
     return BigInt(val);
   };
   
-  // DEBUG: Log raw input note values
-  console.log('[SDK transfer] Raw inputNote values:', {
-    amount: params.inputNote.amount,
-    amountType: typeof params.inputNote.amount,
-    amountIsArray: Array.isArray(params.inputNote.amount),
-    tokenId: params.inputNote.tokenId,
-    tokenIdType: typeof params.inputNote.tokenId,
-    randomnessR: params.inputNote.randomness.r,
-    randomnessRType: typeof params.inputNote.randomness.r,
-    memo: params.inputNote.memo,
-    memoType: typeof params.inputNote.memo,
-  });
-  
   const inAmount = toBigInt(params.inputNote.amount);
   const inTokenId = toBigInt(params.inputNote.tokenId);
   const inRandomnessR = toBigInt(params.inputNote.randomness.r);
   const inMemo = params.inputNote.memo ? toBigInt(params.inputNote.memo) : 0n;
   
-  // DEBUG: Log converted values
-  console.log('[SDK transfer] Converted input note values:', {
-    inAmount: inAmount.toString(),
-    inAmountType: typeof inAmount,
-    inAmountIsArray: Array.isArray(inAmount),
-    inTokenId: inTokenId.toString(),
-    inRandomnessR: inRandomnessR.toString(),
-    inMemo: inMemo.toString(),
-  });
-  
   const inAmountStr = modF(inAmount).toString();
   const inTokenIdStr = modF(inTokenId).toString();
   const inRandomnessStr = modF(inRandomnessR).toString();
   const inMemoStr = modF(inMemo).toString();
-  
-  // DEBUG: Log string values before adding to inputSignals
-  console.log('[SDK transfer] String values for circuit:', {
-    inAmount: inAmountStr,
-    inAmountType: typeof inAmountStr,
-    inAmountIsArray: Array.isArray(inAmountStr),
-    inTokenId: inTokenIdStr,
-    inRandomness: inRandomnessStr,
-    inMemo: inMemoStr,
-  });
   
   // Build inputSignals object (matching test pattern exactly)
   const inputSignals: Record<string, any> = {
@@ -478,25 +425,6 @@ export async function transfer(params: TransferParams): Promise<TransferResult> 
   cleanInput.out2PathElements = normalizedInput.out2PathElements;
   cleanInput.encNote1Hash = normalizedInput.encNote1Hash;
   cleanInput.encNote2Hash = normalizedInput.encNote2Hash;
-  
-  // DEBUG: Log final clean input object
-  console.log('[SDK transfer] Clean input object (Object.create(null)):', {
-    keys: Object.keys(cleanInput),
-    inAmount: cleanInput.inAmount,
-    inAmountType: typeof cleanInput.inAmount,
-    inAmountIsArray: Array.isArray(cleanInput.inAmount),
-    inPathIndicesType: typeof cleanInput.inPathIndices,
-    inPathIndicesIsArray: Array.isArray(cleanInput.inPathIndices),
-    inPathIndicesSample: Array.isArray(cleanInput.inPathIndices) ? cleanInput.inPathIndices.slice(0, 3) : 'N/A',
-    sampleScalars: {
-      inAmount: cleanInput.inAmount,
-      inTokenId: cleanInput.inTokenId,
-      out1Amount: cleanInput.out1Amount,
-    },
-    // Verify no prototype
-    hasPrototype: Object.getPrototypeOf(cleanInput) !== null ? 'yes' : 'no',
-    prototypeKeys: Object.getPrototypeOf(cleanInput) !== null ? Object.keys(Object.getPrototypeOf(cleanInput)) : [],
-  });
 
   // 11) Generate proof locally in browser (pass clean input directly, matching test pattern)
   const { proof, publicSignals } = await generateTransferProof(cleanInput as any);
