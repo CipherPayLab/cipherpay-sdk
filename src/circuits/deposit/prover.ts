@@ -29,7 +29,7 @@ export interface DepositInput {
 
 /** Prove deposit and verify locally when vkey is present. */
 export async function generateDepositProof(input: DepositInput): Promise<ProveResult<DepositPublicSignals>> {
-  const art = await loadArtifacts(import.meta.url.replace(/prover\.ts$/, "artifacts.json"));
+  const art = await loadArtifacts(import.meta.url.replace(/prover\.ts$/, "artifacts.json"), "deposit");
   const out = await prove<DepositPublicSignals>(art.wasm, art.zkey, input as unknown as Record<string, unknown>);
 
   // Optional safety: local verify when vkey is available

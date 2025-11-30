@@ -65,10 +65,13 @@ async function buildBrowser() {
     SDKClass.poseidonHash = __SDK_EXPORTS__.poseidonHash;
     SDKClass.poseidonHashForAuth = __SDK_EXPORTS__.poseidonHashForAuth;
     SDKClass.deposit = __SDK_EXPORTS__.deposit;
+    SDKClass.transfer = __SDK_EXPORTS__.transfer;
     SDKClass.approveRelayerDelegate = __SDK_EXPORTS__.approveRelayerDelegate;
     SDKClass.revokeRelayerDelegate = __SDK_EXPORTS__.revokeRelayerDelegate;
     SDKClass.createIdentity = __SDK_EXPORTS__.createIdentity;
     SDKClass.deriveRecipientCipherPayPubKey = __SDK_EXPORTS__.deriveRecipientCipherPayPubKey;
+    // Note encryption: The new secure approach uses Curve25519 public keys directly from DB
+    // No derivation functions are exported - the public key is used directly for encryption
     
     // Export to global
     if (typeof window !== 'undefined') {

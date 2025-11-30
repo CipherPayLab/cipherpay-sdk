@@ -11,6 +11,7 @@
 
 import { RelayerClient } from "./relayer/client.js";
 import { deposit, DepositParams, DepositResult } from "./flows/deposit.js";
+import { transfer, TransferParams, TransferResult } from "./flows/transfer.js";
 import { createIdentity, deriveRecipientCipherPayPubKey } from "./keys/identity.js";
 import type { Identity, CipherPayKeypair } from "./types/keys.js";
 
@@ -77,10 +78,9 @@ export class CipherPaySDK {
     return deposit(params);
   }
 
-  // Transfer flow (placeholder for now)
-  async transfer(params: any): Promise<any> {
-    console.warn('[CipherPaySDK] transfer not yet fully integrated');
-    throw new Error('Transfer flow not yet implemented in SDK class');
+  // Transfer flow
+  async transfer(params: TransferParams): Promise<TransferResult> {
+    return transfer(params);
   }
 
   // Withdraw flow (placeholder for now)
