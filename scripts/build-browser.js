@@ -70,6 +70,8 @@ async function buildBrowser() {
     SDKClass.revokeRelayerDelegate = __SDK_EXPORTS__.revokeRelayerDelegate;
     SDKClass.createIdentity = __SDK_EXPORTS__.createIdentity;
     SDKClass.deriveRecipientCipherPayPubKey = __SDK_EXPORTS__.deriveRecipientCipherPayPubKey;
+    // Note encryption: The new secure approach uses Curve25519 public keys directly from DB
+    // No derivation functions are exported - the public key is used directly for encryption
     
     // Export to global
     if (typeof window !== 'undefined') {

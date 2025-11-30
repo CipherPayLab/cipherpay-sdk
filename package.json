@@ -18,6 +18,7 @@
   "types": "./dist/index.d.ts",
   "dependencies": {
     "circomlibjs": "^0.1.7",
+    "tweetnacl": "^1.0.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {
