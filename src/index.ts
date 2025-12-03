@@ -28,6 +28,12 @@ export type { DepositParams, DepositResult } from "./flows/deposit.js";
 export { transfer } from "./flows/transfer.js";
 export type { TransferParams, TransferResult } from "./flows/transfer.js";
 
+// Circuit proof generation exports
+export { generateDepositProof, generateTransferProof, generateWithdrawProof } from "./circuits/index.js";
+export type { DepositInput, DepositPublicSignals } from "./circuits/deposit/prover.js";
+export type { TransferInput, TransferPublicSignals } from "./circuits/transfer/prover.js";
+export type { WithdrawInput, WithdrawPublicSignals } from "./circuits/withdraw/prover.js";
+
 // Solana delegate approval (one-time setup for deposits)
 export { approveRelayerDelegate, revokeRelayerDelegate } from "./chains/solana/delegate.js";
 export type { ApproveRelayerDelegateParams, ApproveRelayerDelegateResult } from "./chains/solana/delegate.js";
