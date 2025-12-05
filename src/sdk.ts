@@ -14,6 +14,11 @@ import { deposit, DepositParams, DepositResult } from "./flows/deposit.js";
 import { transfer, TransferParams, TransferResult } from "./flows/transfer.js";
 import { createIdentity, deriveRecipientCipherPayPubKey } from "./keys/identity.js";
 import type { Identity, CipherPayKeypair } from "./types/keys.js";
+import { 
+  generateDepositProof, 
+  generateTransferProof, 
+  generateWithdrawProof 
+} from "./circuits/index.js";
 
 export interface SDKConfig {
   chainType: 'solana' | 'ethereum';
@@ -55,6 +60,13 @@ export class CipherPaySDK {
       config.relayerUrl,
       config.relayerApiKey
     );
+
+    // Initialize zkProver with all proof generation functions
+    this.zkProver = {
+      generateDepositProof,
+      generateTransferProof,
+      generateWithdrawProof,
+    };
 
     console.log('[CipherPaySDK] Initialized with config:', {
       chainType: config.chainType,

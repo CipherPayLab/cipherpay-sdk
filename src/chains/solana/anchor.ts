@@ -37,6 +37,16 @@ function beBytes32(x: bigint): Uint8Array {
   return out;
 }
 
+function leBytes32(x: bigint): Uint8Array {
+  const out = new Uint8Array(32);
+  let v = x;
+  for (let i = 0; i < 32; i++) {
+    out[i] = Number(v & 0xffn);
+    v >>= 8n;
+  }
+  return out;
+}
+
 /** Flatten a snarkjs Groth16 proof into bytes. Adjust to your program's expected order. */
 export function encodeGroth16Proof(proof: any): Uint8Array {
   // snarkjs proof layout:
@@ -140,6 +150,118 @@ export function buildShieldedDepositIx(params: {
   accounts: {
     payer: PublicKey;
     user: PublicKey;              // owner wallet
+    userTokenAta: PublicKey;
+    vaultAuthorityPda: PublicKey;
+    vaultTokenAta: PublicKey;
+    mint: PublicKey;
+
+    systemProgram: PublicKey;
+    tokenProgram: PublicKey;
+    associatedTokenProgram: PublicKey;
+    rent?: PublicKey;
+  };
+  data: Buffer;
+}): TransactionInstruction {
+  const {
+    payer, user, userTokenAta, vaultAuthorityPda, vaultTokenAta, mint,
+    systemProgram, tokenProgram, associatedTokenProgram, rent
+  } = params.accounts;
+
+  const metas: AccountMeta[] = [
+    { pubkey: payer, isSigner: true,  isWritable: true },
+    { pubkey: user,  isSigner: false, isWritable: false },
+    { pubkey: userTokenAta, isSigner: false, isWritable: true },
+    { pubkey: vaultAuthorityPda, isSigner: false, isWritable: false },
+    { pubkey: vaultTokenAta, isSigner: false, isWritable: true },
+    { pubkey: mint, isSigner: false, isWritable: false },
+
+    { pubkey: systemProgram, isSigner: false, isWritable: false },
+    { pubkey: tokenProgram, isSigner: false, isWritable: false },
+    { pubkey: associatedTokenProgram, isSigner: false, isWritable: false },
+  ];
+  if (rent) metas.push({ pubkey: rent, isSigner: false, isWritable: false });
+
+  return new TransactionInstruction({
+    programId: params.programId,
+    keys: metas,
+    data: params.data,
+  });
+}
+
+class ShieldedWithdrawArgs {
+  proof!: Uint8Array;
+  nullifier!: Uint8Array;
+  merkle_root!: Uint8Array;
+  recipient_owner_lo!: Uint8Array;
+  recipient_owner_hi!: Uint8Array;
+  recipient_wallet_pubkey!: Uint8Array;
+  amount!: Uint8Array;
+  token_id!: Uint8Array;
+
+  constructor(fields: {
+    proof: Uint8Array;
+    nullifier: Uint8Array;
+    merkle_root: Uint8Array;
+    recipient_owner_lo: Uint8Array;
+    recipient_owner_hi: Uint8Array;
+    recipient_wallet_pubkey: Uint8Array;
+    amount: Uint8Array;
+    token_id: Uint8Array;
+  }) {
+    Object.assign(this, fields);
+  }
+}
+
+const ShieldedWithdrawSchema: Schema = new Map([
+  [ShieldedWithdrawArgs, {
+    kind: "struct",
+    fields: [
+      ["proof", ["u8"]],
+      ["nullifier", [32]],
+      ["merkle_root", [32]],
+      ["recipient_owner_lo", [32]],
+      ["recipient_owner_hi", [32]],
+      ["recipient_wallet_pubkey", [32]],
+      ["amount", [32]],
+      ["token_id", [32]],
+    ],
+  }],
+]);
+
+export function encodeWithdrawCallData(args: {
+  proof: any;
+  nullifier: bigint;
+  merkleRoot: bigint;
+  recipientOwnerLo: bigint;
+  recipientOwnerHi: bigint;
+  recipientWalletPublicKey: PublicKey;
+  amount: bigint;
+  tokenId: bigint;
+  method?: string;
+}): Buffer {
+  const method = args.method ?? "shielded_withdraw";
+  const disc = methodDiscriminator(method);
+
+  const payload = new ShieldedWithdrawArgs({
+    proof: encodeGroth16Proof(args.proof),
+    nullifier: beBytes32(args.nullifier),
+    merkle_root: beBytes32(args.merkleRoot),
+    recipient_owner_lo: leBytes32(args.recipientOwnerLo),
+    recipient_owner_hi: leBytes32(args.recipientOwnerHi),
+    recipient_wallet_pubkey: args.recipientWalletPublicKey.toBytes(),
+    amount: beBytes32(args.amount),
+    token_id: beBytes32(args.tokenId),
+  });
+
+  const body = serialize(ShieldedWithdrawSchema, payload);
+  return Buffer.concat([Buffer.from(disc), Buffer.from(body)]);
+}
+
+export function buildShieldedWithdrawIx(params: {
+  programId: PublicKey;
+  accounts: {
+    payer: PublicKey;
+    user: PublicKey;
     userTokenAta: PublicKey;
     vaultAuthorityPda: PublicKey;
     vaultTokenAta: PublicKey;

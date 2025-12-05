@@ -73,6 +73,11 @@ async function buildBrowser() {
     // Note encryption: The new secure approach uses Curve25519 public keys directly from DB
     // No derivation functions are exported - the public key is used directly for encryption
     
+    // Circuit proof generation exports
+    SDKClass.generateDepositProof = __SDK_EXPORTS__.generateDepositProof;
+    SDKClass.generateTransferProof = __SDK_EXPORTS__.generateTransferProof;
+    SDKClass.generateWithdrawProof = __SDK_EXPORTS__.generateWithdrawProof;
+    
     // Export to global
     if (typeof window !== 'undefined') {
       window.CipherPaySDK = SDKClass;
