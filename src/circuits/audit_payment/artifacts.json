@@ -1,0 +1,5 @@
+{
+  "wasm": "./audit_payment.wasm",
+  "zkey": "./audit_payment_final.zkey",
+  "vkey": "./audit_payment_vkey.json"
+}

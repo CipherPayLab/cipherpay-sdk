@@ -1,0 +1,5 @@
+{
+  "wasm": "./audit_withdraw.wasm",
+  "zkey": "./audit_withdraw_final.zkey",
+  "vkey": "./audit_withdraw_vkey.json"
+}
