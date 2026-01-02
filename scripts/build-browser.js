@@ -77,6 +77,7 @@ async function buildBrowser() {
     SDKClass.generateDepositProof = __SDK_EXPORTS__.generateDepositProof;
     SDKClass.generateTransferProof = __SDK_EXPORTS__.generateTransferProof;
     SDKClass.generateWithdrawProof = __SDK_EXPORTS__.generateWithdrawProof;
+    SDKClass.generateAuditPaymentProof = __SDK_EXPORTS__.generateAuditPaymentProof;
     
     // Export to global
     if (typeof window !== 'undefined') {

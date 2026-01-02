@@ -29,10 +29,11 @@ export { transfer } from "./flows/transfer.js";
 export type { TransferParams, TransferResult } from "./flows/transfer.js";
 
 // Circuit proof generation exports
-export { generateDepositProof, generateTransferProof, generateWithdrawProof } from "./circuits/index.js";
+export { generateDepositProof, generateTransferProof, generateWithdrawProof, generateAuditPaymentProof } from "./circuits/index.js";
 export type { DepositInput, DepositPublicSignals } from "./circuits/deposit/prover.js";
 export type { TransferInput, TransferPublicSignals } from "./circuits/transfer/prover.js";
 export type { WithdrawInput, WithdrawPublicSignals } from "./circuits/withdraw/prover.js";
+export type { AuditPaymentInput, AuditPaymentPublicSignals } from "./circuits/audit_payment/prover.js";
 
 // Solana delegate approval (one-time setup for deposits)
 export { approveRelayerDelegate, revokeRelayerDelegate } from "./chains/solana/delegate.js";

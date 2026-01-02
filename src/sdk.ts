@@ -17,7 +17,8 @@ import type { Identity, CipherPayKeypair } from "./types/keys.js";
 import { 
   generateDepositProof, 
   generateTransferProof, 
-  generateWithdrawProof 
+  generateWithdrawProof,
+  generateAuditPaymentProof
 } from "./circuits/index.js";
 
 export interface SDKConfig {
@@ -66,6 +67,7 @@ export class CipherPaySDK {
       generateDepositProof,
       generateTransferProof,
       generateWithdrawProof,
+      generateAuditPaymentProof,
     };
 
     console.log('[CipherPaySDK] Initialized with config:', {

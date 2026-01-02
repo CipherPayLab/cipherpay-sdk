@@ -8,3 +8,6 @@ export type { TransferInput, TransferPublicSignals } from "./transfer/prover.js"
 export { generateWithdrawProof } from "./withdraw/prover.js";
 export type { WithdrawInput, WithdrawPublicSignals } from "./withdraw/prover.js";
 
+
+export { generateAuditPaymentProof } from "./audit_payment/prover.js";
+export type { AuditPaymentInput, AuditPaymentPublicSignals } from "./audit_payment/prover.js";
